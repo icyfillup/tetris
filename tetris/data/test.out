@@ -1,0 +1,66 @@
+#include "tetris.h"
+
+internal game_screen_buffer InitTetrisGameMode(game_screen_buffer *Buffer)
+{
+    game_screen_buffer Result = {};
+
+    Result.ScreenBit = Buffer->ScreenBit;
+    Result.Width = 10;
+    Result.Height = 20;
+    Result.Pitch = Buffer->Width;
+    
+    return Result;
+}
+
+
+
+extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
+{
+    Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
+    
+    game_state *GameState = (game_state *) Memory->PermanentStorage;
+    if(!Memory->IsInit)
+    {
+        GameState->TetrisScreenSpace = InitTetrisGameMode(Buffer);
+
+        GameState->SquareBlockHeight = 2;
+        GameState->SquareBlockWidth = 2;
+        GameState->SquareBlockX = 5;
+        GameState->SquareBlockY = 5;
+
+        char* FileName = __FILE__;
+        debug_read_file_result File = Memory->DEBUGPlatformReadFromFile(Thread, FileName);
+
+        if(File.Content)
+        {
+            Memory->DEBUGPlatformWriteEntireFile(Thread, "test.out", File.ContentSize, File.Content);
+            Memory->DEBUGPlatformFreeFileMemory(Thread, File.Content);
+        }
+        
+        Memory->IsInit = true;
+    }
+
+    for(int32 y = 0; y < GameState->TetrisScreenSpace.Height; y++)
+    {
+        int32 Pitch = y * GameState->TetrisScreenSpace.Pitch;
+        for(int32 x = 0; x < GameState->TetrisScreenSpace.Width; x++)
+        {
+            *(((int8*)GameState->TetrisScreenSpace.ScreenBit) + x + Pitch) = '#';
+        }
+    }
+
+    GameState->SquareBlockY += (NewInput->Up.EndedDown) ? 1 : 0;
+    GameState->SquareBlockY += (NewInput->Down.EndedDown) ? -1 : 0;
+    GameState->SquareBlockX += (NewInput->Left.EndedDown) ? -1 : 0;
+    GameState->SquareBlockX += (NewInput->Right.EndedDown) ? 1 : 0;
+    
+    int32 Pitch = GameState->TetrisScreenSpace.Pitch * GameState->SquareBlockY;
+    for(int32 y = 0; y < GameState->SquareBlockHeight; y++)
+    {
+        for(int32 x = 0; x < GameState->SquareBlockWidth; x++)
+        {
+            *(((int8*)GameState->TetrisScreenSpace.ScreenBit) + Pitch + GameState->SquareBlockX + x) = ' ';
+        }
+        Pitch -= GameState->TetrisScreenSpace.Pitch;
+    }
+}
