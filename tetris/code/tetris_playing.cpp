@@ -14,7 +14,7 @@ internal uint32 GetPositionOnScreenArea(const screen_area* ScreenArea,
 void BlockShape(block *Block, int32 X, int32 Y)
 {
     
-#if 0 
+#if 1 
     Block->Pixel[0] = {X    , Y};
     Block->Pixel[1] = {X    , Y + 1};
     Block->Pixel[2] = {X - 1, Y};
