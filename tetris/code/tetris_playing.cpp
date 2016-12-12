@@ -89,7 +89,6 @@ internal void GetNextBlock(block *Block, uint32 RandomNumber,
             //Assert(1 == 1);
         }break;
     }
-    
 #else
     Block->Pixel[0] = {X    , Y};
     Block->Pixel[1] = {X    , Y + 1};

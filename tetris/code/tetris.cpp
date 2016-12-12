@@ -221,7 +221,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
             if(!(RelativePlayerBlock.Pixel[i].Y <
                  (int32)PlayingScreen->ScreenArea->Height))
-            {
+            {// TODO: block should not hit screen height until block stacks hits it
                 TransiteBlock(&RelativePlayerBlock, -1, 0);
             }    
 
