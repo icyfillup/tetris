@@ -7,16 +7,16 @@ internal screen_area* CreateScreenArea(memory_arena* TetrisArena,
                                        uint32 Width, uint32 Height)
 {
     screen_area *Result = PushStruct(TetrisArena, screen_area);
-
+    
     Result->WorldPos = {WorldX, WorldY};
-
+    
     Result->Width = Width;
     Result->Height = Height;
-
+    
     Result->Pixel = PushArray(TetrisArena,
                               Result->Height * Result->Width,
                               uint8);
-
+    
     return Result;
 }
 
@@ -55,12 +55,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         }
 
         {//Player
-            GameState->Player.Block =
-                PushStruct(&GameState->TetrisArena, block);
+            GameState->Player.Block = PushStruct(&GameState->TetrisArena, block);
             
             StartingPoint = {GameState->TetrisWorld->PlayingScreen->ScreenArea->Width/2,
-                             GameState->TetrisWorld->PlayingScreen->ScreenArea->Height - 2};
-
+                GameState->TetrisWorld->PlayingScreen->ScreenArea->Height - 2};
+            
             {
                 GetNextBlock(GameState->Player.Block, 0,
                              StartingPoint.X,
@@ -77,7 +76,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             GameState->TetrisWorld->NextBlockScreen->ScreenArea =
                 CreateScreenArea(&GameState->TetrisArena,
                                  13, 10, 4, 4);
-
+            
             GameState->TetrisWorld->NextBlockScreen->Pitch = Buffer->Width;
             GameState->TetrisWorld->NextBlockScreen->ScreenPos.X =
                 ((GameState->TetrisWorld->NextBlockScreen->ScreenArea->Width / 2) - 1);
@@ -88,7 +87,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                          GameState->TetrisWorld->NextBlockScreen->ScreenPos.X,
                          GameState->TetrisWorld->NextBlockScreen->ScreenPos.Y);
         }
-
+        
         {//Score Screen
             GameState->TetrisWorld->ScoreScreen =
                 PushStruct(&GameState->TetrisArena, score_screen);
@@ -295,9 +294,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     {
         SetBlockToPlayingScreen(PlayingScreen, Player->Block);
         {
-            int32 BlockPixelY[4] = {Player->Block->Pixel[0].Y, Player->Block->Pixel[1].Y, Player->Block->Pixel[2].Y, Player->Block->Pixel[3].Y};
+            int32 BlockPixelY[4] = {
+                Player->Block->Pixel[0].Y, 
+                Player->Block->Pixel[1].Y, 
+                Player->Block->Pixel[2].Y,
+                Player->Block->Pixel[3].Y};
+            
             DescSort(BlockPixelY, ArrayCount(BlockPixelY));
-
+            
             for(uint32 j = 0; j < ArrayCount(BlockPixelY); j++)
             {
                 bool32 IsSlotStillFilled = 0;
@@ -347,10 +351,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                      NextBlockScreen->ScreenPos.Y);
 
         {
-            GetNextBlock(Player->Block, 0,
+            GetNextBlock(Player->Block, RandomNumberTable[RandomNumberIndex],
                          StartingPoint.X,
                          StartingPoint.Y);
             Player->Position = &Player->Block->Pixel[0];
+            
+            RandomNumberIndex++;
         }
         
     }
@@ -430,10 +436,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             }
             else
             {
-                *(((uint8 *)Buffer->ScreenBit) +
-                  ((ScoreScreen->ScreenPos.Y + ScoreScreen->ScreenArea->WorldPos.Y + Y_Index) *
-                   ScoreScreen->Pitch) +
-                  (ScoreScreen->ScreenPos.X + ScoreScreen->ScreenArea->WorldPos.X + X_Index)) = ' ';
+                *(((uint8 *)Buffer->ScreenBit) +((ScoreScreen->ScreenPos.Y + ScoreScreen->ScreenArea->WorldPos.Y + Y_Index)* ScoreScreen->Pitch) +(ScoreScreen->ScreenPos.X  + ScoreScreen->ScreenArea->WorldPos.X + X_Index)) = ' ';
             }
             
         }

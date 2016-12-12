@@ -20,7 +20,6 @@
 #include <windows.h>
 
 #include "main.h"
-
 DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUGPlatformFreeFileMemory)
 {
     if(Memory)
@@ -200,7 +199,7 @@ inline LARGE_INTEGER Win32GetWallClock()
 inline real32 Win32GetSecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
 {
     real32 Result =  ((real32)(End.QuadPart - Start.QuadPart)) /
-                                (real32)GlobalPerfCountFrequency;
+        (real32)GlobalPerfCountFrequency;
     return Result;
 }
 
@@ -213,7 +212,7 @@ inline FILETIME CMDGetLastWriteTime(char *FileName)
     {
         LastWriteTime = FindData.ftLastWriteTime;
     }
-        
+    
     return LastWriteTime;
 }
 
@@ -221,7 +220,7 @@ internal CMD_game_code CMDLoadGameCode(char *SourceDLLName,
                                        char *TempDLLName)
 {
     CMD_game_code Result = {};
-
+    
     Result.DLLLastWriteTime = CMDGetLastWriteTime(SourceDLLName);
     
     CopyFile(SourceDLLName, TempDLLName, FALSE);
@@ -230,15 +229,15 @@ internal CMD_game_code CMDLoadGameCode(char *SourceDLLName,
     if(Result.GameCodeDLL)
     {
         Result.UpdateAndRender = (game_update_and_render *)GetProcAddress(Result.GameCodeDLL, "GameUpdateAndRender");
-
+        
         Result.IsValid = Result.UpdateAndRender && Result.GameCodeDLL; 
     }
-
+    
     if(!Result.IsValid)
     {
         Result.UpdateAndRender = GameUpdateAndRenderStub;
     }
-
+    
     return Result;
 }
 
@@ -249,7 +248,7 @@ internal void CMDUnloadGameCode(CMD_game_code* GameCode)
         FreeLibrary(GameCode->GameCodeDLL);
         GameCode->GameCodeDLL = 0;
     }
-
+    
     GameCode->IsValid = false;
     GameCode->UpdateAndRender = GameUpdateAndRenderStub;
 }
@@ -260,12 +259,12 @@ internal void CMDInitWindow(CMD_window_buffer *Buffer)
     Buffer->Height = 20;
     Buffer->Pitch = Buffer->Width;
     uint32 BufferMemberSize = Buffer->Width * Buffer->Height;
-
+    
     //Buffer->WindowBit = calloc(WindowSize, sizeof(int8));
     Buffer->WindowBit = VirtualAlloc(0, BufferMemberSize,
                                      MEM_COMMIT|MEM_RESERVE,
                                      PAGE_READWRITE);
-
+    
 #if TETRIS_SLOW
     for(int32 i = 0; i < Buffer->Width * Buffer->Height; ++i)
     {
@@ -294,7 +293,7 @@ internal void CMDBeginRecordingInput(CMD_state* State,
                                      int InputRecordingIndex)
 {
     CMD_replay_buffer *ReplayBuffer = CMDGetReplayBuffer(State, InputRecordingIndex);
-        
+    
     if(ReplayBuffer->MemoryBlock)
     {                                        
         State->InputRecordingIndex = InputRecordingIndex;
@@ -305,7 +304,7 @@ internal void CMDBeginRecordingInput(CMD_state* State,
                                 FileName);
         State->RecordingHandle = CreateFileA(FileName, GENERIC_WRITE,
                                              0, 0, CREATE_ALWAYS, 0, 0);
-
+        
 #if 0
         LARGE_INTEGER FilePosition;
         FilePosition.QuadPart = State->TotalGameMemorySize;
@@ -315,9 +314,9 @@ internal void CMDBeginRecordingInput(CMD_state* State,
         CopyMemory(ReplayBuffer->MemoryBlock,
                    State->GameMemoryBlock,
                    State->TotalGameMemorySize);
-
+        
     }
-
+    
 }
 
 internal void CMDEndRecordingInput(CMD_state* State)
@@ -338,7 +337,7 @@ internal void CMDBeginInputPlayBack(CMD_state* State,
                                     int InputPlayingIndex)
 {
     CMD_replay_buffer *ReplayBuffer = CMDGetReplayBuffer(State, InputPlayingIndex);
-        
+    
     if(ReplayBuffer->MemoryBlock)
     {
         State->InputPlayingIndex = InputPlayingIndex;        
@@ -357,7 +356,7 @@ internal void CMDBeginInputPlayBack(CMD_state* State,
         CopyMemory(State->GameMemoryBlock,
                    ReplayBuffer->MemoryBlock,
                    State->TotalGameMemorySize);
-
+        
     }
     
 }
@@ -389,7 +388,7 @@ internal void CMDPlayBackInput(CMD_state* State,
 internal CMD_button_bit CMDKeybroadInputProcess(uint8 ButtonBit, int KeyCode)
 {
     CMD_button_bit Result = {};
-
+    
     Result.ButtonBit = ButtonBit;
     Result.PressedKeyCode = KeyCode;
     
@@ -403,7 +402,7 @@ internal void CMDKeybroadMessageInput(CMD_state *State,
     if(_kbhit())
     {
         int KeyCode = _getch();
-
+        
         if(OldUserButton->PressedKeyCode != KeyCode)
         {
             switch(KeyCode)
@@ -413,38 +412,38 @@ internal void CMDKeybroadMessageInput(CMD_state *State,
                     *NewUserButton = CMDKeybroadInputProcess(BIT_BUTTON_UP,
                                                              KeyCode);
                 }break;
-
+                
                 case CMD_BUTTON_LEFT:
                 {
                     *NewUserButton = CMDKeybroadInputProcess(BIT_BUTTON_LEFT,
                                                              KeyCode);
                 }break;
-            
+                
                 case CMD_BUTTON_DOWN:
                 {
                     *NewUserButton = CMDKeybroadInputProcess(BIT_BUTTON_DOWN,
                                                              KeyCode);
                 }break;
-            
+                
                 case CMD_BUTTON_RIGHT:
                 {
                     *NewUserButton = CMDKeybroadInputProcess(BIT_BUTTON_RIGHT,
                                                              KeyCode);
                 }break;
-
+                
                 case CMD_BUTTON_BUTTON1:
                 {
                     *NewUserButton = CMDKeybroadInputProcess(BIT_BUTTON_BUTTON1,
                                                              KeyCode);
                 }break;            
-
-
+                
+                
                 case 'L':
                 {
-
+                    
                     OutputDebugStringA("Pressing\n");
                     *NewUserButton = CMDKeybroadInputProcess(NO_VALID_INPUT_KEY, KeyCode);
-
+                    
                     if(State->InputPlayingIndex == 0)
                     {
                         if(State->InputRecordingIndex == 0)
@@ -464,7 +463,7 @@ internal void CMDKeybroadMessageInput(CMD_state *State,
                     
                 }
                 break;
-            
+                
                 default:
                 {
                     *NewUserButton = CMDKeybroadInputProcess(NO_VALID_INPUT_KEY, 0);
@@ -484,8 +483,8 @@ internal void CMDKeybroadMessageInput(CMD_state *State,
 }
 
 internal void CMDProcessButton(int32 UserButton, int32 ButtonBit,
-                                game_button_state* OldState,
-                                game_button_state* NewState)
+                               game_button_state* OldState,
+                               game_button_state* NewState)
 {
     NewState->EndedDown = (UserButton & ButtonBit) == ButtonBit;
     NewState->HalfTransitionCount = (OldState->EndedDown !=
@@ -494,12 +493,12 @@ internal void CMDProcessButton(int32 UserButton, int32 ButtonBit,
 
 int main()
 {
-/*
-    system("PAUSE");
-*/
+    /*
+        system("PAUSE");
+    */
     CMD_state CMDState = {};
     Win32GetEXEFileName(&CMDState);
-   
+    
     char SourceGameCodeDLLFullPath[WIN32_STATE_FILE_NAME_COUNT];
     CMDBuildEXEPathFileName(&CMDState, "tetris.dll",
                             sizeof(SourceGameCodeDLLFullPath), SourceGameCodeDLLFullPath);
@@ -507,73 +506,73 @@ int main()
     char TempGameCodeDLLFullPath[WIN32_STATE_FILE_NAME_COUNT];
     CMDBuildEXEPathFileName(&CMDState, "tetris_temp.dll",
                             sizeof(TempGameCodeDLLFullPath), TempGameCodeDLLFullPath);
-
+    
     LARGE_INTEGER PerfCountFrequenceResult;
     QueryPerformanceFrequency(&PerfCountFrequenceResult);
     GlobalPerfCountFrequency = PerfCountFrequenceResult.QuadPart;
-
+    
     UINT DesiredSchedulerMS = 1;
     bool32 SleepIsGranular = (timeBeginPeriod(DesiredSchedulerMS) == TIMERR_NOERROR);
-
+    
     int MonitorRefreshHz = 60;
     int GameUpdateHz = MonitorRefreshHz / 2;
     real32 TargetSecondsPerFrame = 1.0f / (real32)GameUpdateHz;
-
+    
     CMDInitWindow(&GlobalBackBuffer);
-
+    
     if(GlobalBackBuffer.WindowBit)
     {
         GlobalRunning = true;
-                   
+        
 #if TETRIS_INTERNAL
         LPVOID BaseAddress = (LPVOID) Terabytes(2);
 #else
         LPVoid BaseAddress = 0;
 #endif
-
+        
         game_memory GameMemory = {};
         GameMemory.PermanentStorageSize = Megabytes(64);
         GameMemory.TransientStorageSize = Gigabytes(1);
-
+        
         GameMemory.DEBUGPlatformFreeFileMemory = DEBUGPlatformFreeFileMemory;
         GameMemory.DEBUGPlatformReadFromFile = DEBUGPlatformReadFromFile;
         GameMemory.DEBUGPlatformWriteEntireFile = DEBUGPlatformWriteEntireFile;
         GameMemory.DEBUGOutputMessage = DEBUGOutputMessage;
-    
+        
         CMDState.TotalGameMemorySize = GameMemory.PermanentStorageSize + GameMemory.TransientStorageSize;
-
+        
         CMDState.GameMemoryBlock = VirtualAlloc(BaseAddress, (size_t)CMDState.TotalGameMemorySize,
-                                                   MEM_COMMIT|MEM_RESERVE,
-                                                   PAGE_READWRITE);
+                                                MEM_COMMIT|MEM_RESERVE,
+                                                PAGE_READWRITE);
         GameMemory.TransientStorage = (int8 *)GameMemory.PermanentStorage + GameMemory.PermanentStorageSize;
         GameMemory.PermanentStorage = CMDState.GameMemoryBlock;
-
+        
         for(int ReplayIndex = 0; ReplayIndex < ArrayCount(CMDState.ReplayBuffers); ReplayIndex++)
         {
             CMD_replay_buffer *ReplayBuffer = &CMDState.ReplayBuffers[ReplayIndex];
-
+            
             CMDGetInputFileLocation(&CMDState, false, ReplayIndex,
                                     sizeof(ReplayBuffer->FileName),
                                     ReplayBuffer->FileName);
-
+            
             ReplayBuffer->FileHandle =
                 CreateFileA(ReplayBuffer->FileName, GENERIC_READ|GENERIC_WRITE,
                             0, 0, CREATE_ALWAYS, 0, 0);
-
+            
             LARGE_INTEGER MaxSize;
             MaxSize.QuadPart = CMDState.TotalGameMemorySize;
             ReplayBuffer->MemoryMap =
                 CreateFileMapping(ReplayBuffer->FileHandle, 0, PAGE_READWRITE,
                                   MaxSize.HighPart, MaxSize.LowPart, 0);
-                
+            
             ReplayBuffer->MemoryBlock =
                 MapViewOfFile(ReplayBuffer->MemoryMap,
                               FILE_MAP_ALL_ACCESS, 0, 0,
                               CMDState.TotalGameMemorySize);
-
+            
             if(ReplayBuffer->MemoryBlock)
             {
-
+                
             }
             else
             {
@@ -586,16 +585,16 @@ int main()
             game_controller GameInput[2] = {};
             game_controller *OldInput = &GameInput[0];
             game_controller *NewInput = &GameInput[1];
-
+            
             LARGE_INTEGER LastCounter = Win32GetWallClock();
-
+            
             CMD_button_bit UserButton[2] = {};
             CMD_button_bit *OldUserButton = &UserButton[0];
             CMD_button_bit *NewUserButton = &UserButton[1];
-
+            
             CMD_game_code Game = CMDLoadGameCode(SourceGameCodeDLLFullPath,
                                                  TempGameCodeDLLFullPath);
-        
+            
             uint64 LastCycleCount = __rdtsc();
             while(GlobalRunning)
             {
@@ -609,10 +608,10 @@ int main()
                     Game = CMDLoadGameCode(SourceGameCodeDLLFullPath,
                                            TempGameCodeDLLFullPath);
                 }
-
-
+                
+                
                 CMDKeybroadMessageInput(&CMDState, NewUserButton, OldUserButton);
-            
+                
                 CMDProcessButton(NewUserButton->ButtonBit, BIT_BUTTON_UP,
                                  &OldInput->Up, &NewInput->Up);
                 CMDProcessButton(NewUserButton->ButtonBit, BIT_BUTTON_LEFT,
@@ -623,7 +622,7 @@ int main()
                                  &OldInput->Right, &NewInput->Right);
                 CMDProcessButton(NewUserButton->ButtonBit, BIT_BUTTON_BUTTON1,
                                  &OldInput->Right, &NewInput->Button1);
-
+                
                 thread_context Thread = {};
                 
                 game_screen_buffer Buffer = {};
@@ -631,12 +630,12 @@ int main()
                 Buffer.Width = GlobalBackBuffer.Width;
                 Buffer.Height = GlobalBackBuffer.Height;
                 Buffer.Pitch = GlobalBackBuffer.Pitch;
-
+                
                 if(CMDState.InputRecordingIndex)
                 {
                     CMDRecordInput(&CMDState, NewInput);
                 }
-
+                
                 if(CMDState.InputPlayingIndex)
                 {
                     CMDPlayBackInput(&CMDState, NewInput);
@@ -649,11 +648,11 @@ int main()
                     printf("%c\n", *(((int8*)GlobalBackBuffer.WindowBit) + i));
                 }
 #endif
-
+                
 #if 1
                 LARGE_INTEGER WorkCounter = Win32GetWallClock();
                 real32 WorkSecondsElapsed = Win32GetSecondsElapsed(LastCounter, WorkCounter);
-
+                
                 real32 SecondElapsedForFrame = WorkSecondsElapsed;
                 if(SecondElapsedForFrame < TargetSecondsPerFrame)
                 {
@@ -666,37 +665,37 @@ int main()
                             Sleep(SleepMS);
                         }
                     }
-
+                    
                     real32 TestSecondElapsedForFrame = Win32GetSecondsElapsed
                         (LastCounter, Win32GetWallClock());
-//            Assert(TestSecondElapsedForFrame < TargetSecondsPerFrame);
+                    //            Assert(TestSecondElapsedForFrame < TargetSecondsPerFrame);
                     while(SecondElapsedForFrame < TargetSecondsPerFrame)
                     {
                         SecondElapsedForFrame = Win32GetSecondsElapsed(LastCounter, Win32GetWallClock());
                     }
                 }
 #endif
-            
+                
                 CMDRender(&GlobalBackBuffer);
-
+                
                 LARGE_INTEGER EndCounter = Win32GetWallClock();
                 real32 MSPerFrame = 1000.0f * Win32GetSecondsElapsed(LastCounter, EndCounter);
                 LastCounter = EndCounter;
-        
+                
                 uint64 EndCycleCount = __rdtsc();
                 uint64 CyclesElapsed = EndCycleCount - LastCycleCount;
                 LastCycleCount = EndCycleCount;
-                        
+                
                 real64 FPS = 0.0f;
                 real64 MCPF = ((real64)CyclesElapsed / (1000.0f * 1000.0f));
-
+                
 #if 0
                 char FPSBuffer[256];
                 _snprintf_s(FPSBuffer, sizeof(FPSBuffer),
                             "%.02f ms/f,  %.02f f/s,  %.02f mc/f\n", MSPerFrame, FPS, MCPF);
                 OutputDebugStringA(FPSBuffer);
 #endif
-
+                
                 CMD_button_bit *TempUserButton = NewUserButton;
                 NewUserButton = OldUserButton;
                 OldUserButton = TempUserButton;
@@ -710,8 +709,8 @@ int main()
                 system("cls");
             }
         }
-
+        
     }
     return 0;
-
+    
 }

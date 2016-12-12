@@ -1,4 +1,7 @@
+#include "tetris.h"
 #include "tetris_playing.h"
+
+enum BlockType{O = 0, l = 1, T = 2, L = 3, J = 4, Z = 5, S = 6};
 
 internal uint32 GetPositionOnScreenArea(const screen_area* ScreenArea,
                                         int32 X, int32 Y)
@@ -11,14 +14,81 @@ internal uint32 GetPositionOnScreenArea(const screen_area* ScreenArea,
     return Result;
 }
 
-void BlockShape(block *Block, int32 X, int32 Y)
+internal void GetNextBlock(block *Block, uint32 RandomNumber,
+                           int32 X, int32 Y)
 {
+    // getting new block
     
-#if 0 
-    Block->Pixel[0] = {X    , Y};
-    Block->Pixel[1] = {X    , Y + 1};
-    Block->Pixel[2] = {X - 1, Y};
-    Block->Pixel[3] = {X + 1, Y};
+#if 1
+    
+    uint32 RandomBlockType = RandomNumber % 7;
+    
+    switch(RandomBlockType)
+    {
+        
+        case 0:
+        {// BlockType O
+            Block->Pixel[0] = {X, Y};
+            Block->Pixel[1] = {X, Y + 1};
+            Block->Pixel[2] = {X + 1, Y};
+            Block->Pixel[3] = {X + 1, Y + 1};
+        }break;
+        
+        case 1:
+        {// BlockType.l
+            Block->Pixel[0] = {X, Y};
+            Block->Pixel[1] = {X, Y + 1};
+            Block->Pixel[2] = {X, Y - 1};
+            Block->Pixel[3] = {X, Y - 2};
+        }break;
+        
+        
+        case 2:
+        {// BlockType.T
+            Block->Pixel[0] = {X, Y};
+            Block->Pixel[1] = {X, Y + 1};
+            Block->Pixel[2] = {X - 1, Y};
+            Block->Pixel[3] = {X + 1, Y};
+        }break;
+        
+        case 3:
+        {// BlockType.L
+            Block->Pixel[0] = {X, Y};
+            Block->Pixel[1] = {X, Y + 1};
+            Block->Pixel[2] = {X, Y - 1};
+            Block->Pixel[3] = {X + 1, Y - 1};
+        }break;
+        
+        case 4:
+        {// BlockType.J
+            Block->Pixel[0] = {X, Y};
+            Block->Pixel[1] = {X, Y + 1};
+            Block->Pixel[2] = {X, Y - 1};
+            Block->Pixel[3] = {X - 1, Y - 1};
+        }break;
+        
+        
+        case 5:
+        {// BlockType.Z
+            Block->Pixel[0] = {X, Y};
+            Block->Pixel[1] = {X - 1, Y};
+            Block->Pixel[2] = {X, Y - 1};
+            Block->Pixel[3] = {X + 1, Y - 1};
+        }break;
+        
+        case 6:
+        {// BlockType.S
+            Block->Pixel[0] = {X, Y};
+            Block->Pixel[1] = {X + 1, Y};
+            Block->Pixel[2] = {X, Y - 1};
+            Block->Pixel[3] = {X - 1, Y - 1};
+        }break;
+        
+        default:
+        {
+            //Assert(1 == 1);
+        }break;
+    }
     
 #else
     Block->Pixel[0] = {X    , Y};
@@ -27,11 +97,6 @@ void BlockShape(block *Block, int32 X, int32 Y)
     Block->Pixel[3] = {X + 1, Y + 1};
 #endif
     
-}
-
-internal void GetNextBlock(block *Block, uint32 RandomNumberIndex, int32 X, int32 Y)
-{
-     BlockShape(Block, X, Y);
 }
 
 internal void SetBlockToPlayingScreen(playing_screen* PlayingScreen,
