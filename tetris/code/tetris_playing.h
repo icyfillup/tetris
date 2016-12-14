@@ -8,8 +8,12 @@ struct playing_screen
     screen_area *ScreenArea;
 };
 
+enum Block_Type {O, S, Z, L, J, l, T};
+
 struct block
 {
+    Block_Type Type;
+    
     v2 Pixel[4];
     bool32 Landed;
 };

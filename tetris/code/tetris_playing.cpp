@@ -1,8 +1,6 @@
 #include "tetris.h"
 #include "tetris_playing.h"
 
-enum BlockType{O = 0, l = 1, T = 2, L = 3, J = 4, Z = 5, S = 6};
-
 internal uint32 GetPositionOnScreenArea(const screen_area* ScreenArea,
                                         int32 X, int32 Y)
 {
@@ -14,70 +12,61 @@ internal uint32 GetPositionOnScreenArea(const screen_area* ScreenArea,
     return Result;
 }
 
-internal void GetNextBlock(block *Block, uint32 RandomNumber,
-                           int32 X, int32 Y)
+internal void SetBlockPixel(block *Block, int32 X, int32 Y)
 {
-    // getting new block
-    
-#if 1
-    
-    uint32 RandomBlockType = RandomNumber % 7;
-    
-    switch(RandomBlockType)
+    switch(Block->Type)
     {
         
-        case 0:
-        {// BlockType O
+        case O:
+        {
             Block->Pixel[0] = {X, Y};
             Block->Pixel[1] = {X, Y + 1};
             Block->Pixel[2] = {X + 1, Y};
             Block->Pixel[3] = {X + 1, Y + 1};
         }break;
         
-        case 1:
-        {// BlockType.l
+        case l:
+        {
             Block->Pixel[0] = {X, Y};
-            Block->Pixel[1] = {X, Y + 1};
-            Block->Pixel[2] = {X, Y - 1};
-            Block->Pixel[3] = {X, Y - 2};
+            Block->Pixel[1] = {X, Y - 1};
+            Block->Pixel[2] = {X, Y + 1};
+            Block->Pixel[3] = {X, Y + 2};
         }break;
         
-        
-        case 2:
-        {// BlockType.T
+        case T:
+        {
             Block->Pixel[0] = {X, Y};
             Block->Pixel[1] = {X, Y + 1};
             Block->Pixel[2] = {X - 1, Y};
             Block->Pixel[3] = {X + 1, Y};
         }break;
         
-        case 3:
-        {// BlockType.L
+        case L:
+        {
             Block->Pixel[0] = {X, Y};
             Block->Pixel[1] = {X, Y + 1};
             Block->Pixel[2] = {X, Y - 1};
             Block->Pixel[3] = {X + 1, Y - 1};
         }break;
         
-        case 4:
-        {// BlockType.J
+        case J:
+        {
             Block->Pixel[0] = {X, Y};
             Block->Pixel[1] = {X, Y + 1};
             Block->Pixel[2] = {X, Y - 1};
             Block->Pixel[3] = {X - 1, Y - 1};
         }break;
         
-        
-        case 5:
-        {// BlockType.Z
+        case Z:
+        {
             Block->Pixel[0] = {X, Y};
             Block->Pixel[1] = {X - 1, Y};
             Block->Pixel[2] = {X, Y - 1};
             Block->Pixel[3] = {X + 1, Y - 1};
         }break;
         
-        case 6:
-        {// BlockType.S
+        case S:
+        {
             Block->Pixel[0] = {X, Y};
             Block->Pixel[1] = {X + 1, Y};
             Block->Pixel[2] = {X, Y - 1};
@@ -86,16 +75,69 @@ internal void GetNextBlock(block *Block, uint32 RandomNumber,
         
         default:
         {
-            //Assert(1 == 1);
+            int i = 1;
+            Assert(i == 0);
         }break;
     }
-#else
-    Block->Pixel[0] = {X    , Y};
-    Block->Pixel[1] = {X    , Y + 1};
-    Block->Pixel[2] = {X + 1, Y};
-    Block->Pixel[3] = {X + 1, Y + 1};
-#endif
+}
+
+internal void GetNextBlock(block *Block, uint32 RandomNumber)
+{
+    // set block type
+#if 1
     
+    uint32 RandomBlockType = RandomNumber % 7;
+    
+    switch(RandomBlockType)
+    {
+        case 0:
+        {
+            Block->Type = O;
+        }break;
+        
+        case 1:
+        {
+            Block->Type = l;
+        }break;
+        
+        case 2:
+        {
+            Block->Type = T;
+        }break;
+        
+        case 3:
+        {
+            Block->Type = L;
+        }break;
+        
+        case 4:
+        {
+            Block->Type = J;
+        }break;
+        
+        case 5:
+        {
+            Block->Type = Z;
+        }break;
+        
+        case 6:
+        {
+            Block->Type = S;
+        }break;
+        
+        default:
+        {
+            int i = 0;
+            Assert(i == 1);
+        }break;
+    }
+    
+#else
+    
+    Block->Type = O;
+    
+#endif
+    RandomNumberIndex++;
 }
 
 internal void SetBlockToPlayingScreen(playing_screen* PlayingScreen,

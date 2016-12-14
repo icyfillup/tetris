@@ -61,9 +61,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 GameState->TetrisWorld->PlayingScreen->ScreenArea->Height - 2};
             
             {
-                GetNextBlock(GameState->Player.Block, 0,
-                             StartingPoint.X,
-                             StartingPoint.Y);
+                GetNextBlock(GameState->Player.Block,
+                             RandomNumberTable[RandomNumberIndex]);
+                
+                SetBlockPixel(GameState->Player.Block, StartingPoint.X, StartingPoint.Y);
+                
                 GameState->Player.Position = &GameState->Player.Block->Pixel[0];
             }
         }
@@ -82,10 +84,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
                 ((GameState->TetrisWorld->NextBlockScreen->ScreenArea->Width / 2) - 1);
             GameState->TetrisWorld->NextBlockScreen->ScreenPos.Y =
                 ((GameState->TetrisWorld->NextBlockScreen->ScreenArea->Height / 2) - 1);
+            
             GetNextBlock(GameState->TetrisWorld->NextBlockScreen->NextBlock,
-                         0,
-                         GameState->TetrisWorld->NextBlockScreen->ScreenPos.X,
-                         GameState->TetrisWorld->NextBlockScreen->ScreenPos.Y);
+                         RandomNumberTable[RandomNumberIndex]);
+            
+            SetBlockPixel(GameState->TetrisWorld->NextBlockScreen->NextBlock,
+                          GameState->TetrisWorld->NextBlockScreen->ScreenPos.X,
+                          GameState->TetrisWorld->NextBlockScreen->ScreenPos.Y);
         }
         
         {//Score Screen
@@ -112,10 +117,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
     //TODO: When the block lands, get it a one second(?) pause before
     //      getting the next block
 
-    //TODO     : Once or if the PlayingScreen move to another position
-    //IMPORTANT  on the Buffer Screen, anything related to position on
-    //           the PlayingScreen will be Offset. Canonicalize position
-    //           later.
+    //TODO: Once or if the PlayingScreen move to another position
+    //IMPORTANT:  on the Buffer Screen, anything related to position on the PlayingScreen will
+    //                        be Offset. Canonicalize position later.
 
     bool32 FastDrop = 0;
     
@@ -340,27 +344,33 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
             }
         }
 
+        // clear next block screen
+        for(uint32 i = 0; i < ArrayCount(NextBlockScreen->NextBlock->Pixel); i++)
+        {
+            WriteIntoScreenArea(NextBlockScreen->ScreenArea,
+                                NextBlockScreen->NextBlock->Pixel[i].X,
+                                NextBlockScreen->NextBlock->Pixel[i].Y, ' ');
+        
+        }
+        
         Player->Block->Landed = 0;
         PlayingScreen->TimePassed = 0;
         block *Temp = Player->Block;
         Player->Block = NextBlockScreen->NextBlock;
         NextBlockScreen->NextBlock = Temp;
 
-        GetNextBlock(NextBlockScreen->NextBlock, 0,
-                     NextBlockScreen->ScreenPos.X,
-                     NextBlockScreen->ScreenPos.Y);
+        GetNextBlock(NextBlockScreen->NextBlock, RandomNumberTable[RandomNumberIndex]);
+        SetBlockPixel(NextBlockScreen->NextBlock, 
+                      NextBlockScreen->ScreenPos.X, NextBlockScreen->ScreenPos.Y);
 
-        {
-            GetNextBlock(Player->Block, RandomNumberTable[RandomNumberIndex],
-                         StartingPoint.X,
-                         StartingPoint.Y);
+        {// restart new block for player
+            SetBlockPixel(Player->Block, StartingPoint.X, StartingPoint.Y);
             Player->Position = &Player->Block->Pixel[0];
-            
-            RandomNumberIndex++;
         }
         
     }
 
+    // draw block in next block screen
     for(uint32 i = 0; i < ArrayCount(NextBlockScreen->NextBlock->Pixel); i++)
     {
         WriteIntoScreenArea(NextBlockScreen->ScreenArea,
