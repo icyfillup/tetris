@@ -1,3 +1,4 @@
+
 #include <iostream>
 
 #define CMD_BUTTON_UP 'w'
@@ -102,7 +103,6 @@ DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUGPlatformWriteEntireFile)
     }
     return Result;
 }
-
 
 DEBUG_OUTPUT_MESSAGE(DEBUGOutputMessage)
 {
@@ -253,11 +253,13 @@ internal void CMDUnloadGameCode(CMD_game_code* GameCode)
     GameCode->UpdateAndRender = GameUpdateAndRenderStub;
 }
 
-internal void CMDInitWindow(CMD_window_buffer *Buffer)
+internal void CMDInitWindow(CMD_window_buffer *Buffer, int32 Width, int32 Height)
 {
-    Buffer->Width = 20;
-    Buffer->Height = 20;
-    Buffer->Pitch = Buffer->Width;
+    Buffer->Width = Width;
+    Buffer->Height = Height;
+    
+    Buffer->BytesPerPixel = 1;
+    Buffer->Pitch = Buffer->Width * Buffer->BytesPerPixel;
     uint32 BufferMemberSize = Buffer->Width * Buffer->Height;
     
     //Buffer->WindowBit = calloc(WindowSize, sizeof(int8));
@@ -491,11 +493,9 @@ internal void CMDProcessButton(int32 UserButton, int32 ButtonBit,
                                      NewState->EndedDown) ? 1 : 0;
 }
 
+
 int main()
 {
-    /*
-        system("PAUSE");
-    */
     CMD_state CMDState = {};
     Win32GetEXEFileName(&CMDState);
     
@@ -518,7 +518,7 @@ int main()
     int GameUpdateHz = MonitorRefreshHz / 2;
     real32 TargetSecondsPerFrame = 1.0f / (real32)GameUpdateHz;
     
-    CMDInitWindow(&GlobalBackBuffer);
+    CMDInitWindow(&GlobalBackBuffer, 20, 20);
     
     if(GlobalBackBuffer.WindowBit)
     {
@@ -630,6 +630,7 @@ int main()
                 Buffer.Width = GlobalBackBuffer.Width;
                 Buffer.Height = GlobalBackBuffer.Height;
                 Buffer.Pitch = GlobalBackBuffer.Pitch;
+                Buffer.BytesPerPixel = GlobalBackBuffer.BytesPerPixel;
                 
                 if(CMDState.InputRecordingIndex)
                 {
@@ -714,3 +715,4 @@ int main()
     return 0;
     
 }
+

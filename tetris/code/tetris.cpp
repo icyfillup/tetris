@@ -2,6 +2,29 @@
 #include "tetris_random.h"
 #include "tetris_playing.cpp"
 
+void
+RenderWeirdGradient(game_screen_buffer *Buffer, int BlueOffset, int GreenOffset)
+{
+    // TODO(casey): Let's see what the optimizer does
+    
+    uint8 *Row = (uint8 *)Buffer->ScreenBit;    
+    for(int Y = 0; Y < Buffer->Height; ++Y)
+    {
+        uint32 *Pixel = (uint32 *)Row;
+        for(int X = 0;
+            X < Buffer->Width;
+            ++X)
+        {
+            uint8 Blue = (X + BlueOffset);
+            uint8 Green = (Y + GreenOffset);
+            
+            *Pixel++ = ((Green << 8) | Blue);
+        }
+        
+        Row += Buffer->Pitch;
+    }
+}
+
 internal screen_area* CreateScreenArea(memory_arena* TetrisArena,
                                        int32 WorldX, int32 WorldY,
                                        uint32 Width, uint32 Height)
@@ -26,6 +49,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
     Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
     
+    #if 0
     game_state *GameState = (game_state *) Memory->PermanentStorage;
     
     //TODO: Should i introduce a new file for tetris block or
@@ -466,5 +490,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
     Memory->DEBUGOutputMessage("BlockCenter X: ", (real32)Player->Block->Pixel[0].X);
     Memory->DEBUGOutputMessage("BlockCenter Y: ", (real32)Player->Block->Pixel[0].Y);
-}
 
+    #else
+    
+     //local_persist int XOffset = 0;
+    //local_persist int YOffset = 0;
+    
+    RenderWeirdGradient(Buffer, 0, 0);
+    
+    
+    #endif
+}

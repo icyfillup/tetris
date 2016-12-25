@@ -6,6 +6,7 @@ struct CMD_window_buffer
     int32 Width;
     int32 Height;
     int32 Pitch;
+    int32 BytesPerPixel;
 };
 
 struct CMD_game_code

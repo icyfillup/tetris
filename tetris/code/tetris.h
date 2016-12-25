@@ -39,7 +39,7 @@ struct memory_arena
 #define PushStruct(Arena, type) (type *)PushSize_(Arena,  sizeof(type))
 void *PushSize_(memory_arena *Arena, memory_index Size)
 {
-    Assert((Arena->Used + Size) <= Arena->Size)
+    Assert((Arena->Used + Size) <= Arena->Size);
     
     void *Result = Arena->Base + Arena->Used;
     Arena->Used += Size; 
