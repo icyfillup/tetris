@@ -1,5 +1,6 @@
 #include <windows.h>
 #include <stdio.h>
+#include <gl/gl.h>
 #include "tetris.h"
 #include "win32_tetris.h"
 
@@ -156,7 +157,7 @@ Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
     // in the bitmap, not the bottom left!
     Buffer->Info.bmiHeader.biSize = sizeof(Buffer->Info.bmiHeader);
     Buffer->Info.bmiHeader.biWidth = Buffer->Width;
-    Buffer->Info.bmiHeader.biHeight = -Buffer->Height;
+    Buffer->Info.bmiHeader.biHeight = Buffer->Height;
     Buffer->Info.bmiHeader.biPlanes = 1;
     Buffer->Info.bmiHeader.biBitCount = 32;
     Buffer->Info.bmiHeader.biCompression = BI_RGB;
@@ -169,14 +170,17 @@ Win32ResizeDIBSection(win32_offscreen_buffer *Buffer, int Width, int Height)
     
     Buffer->Pitch = Buffer->Width * Buffer->BytesPerPixel;
     
-    // TODO(casey): Probably clear this to black
+    // TODO(casey): Probably clear this to black    
 }
+
+global_variable GLuint GlobalBlitTextureHandle;
 
 internal void
 Win32DisplayBufferInWindow(HDC DeviceContext,
                            int WindowWidth, int WindowHeight,
                            win32_offscreen_buffer Buffer)
 {
+#if 0
     // TODO(casey): Aspect ratio correction
     // TODO(casey): Play with stretch modes
     StretchDIBits(DeviceContext,
@@ -189,6 +193,112 @@ Win32DisplayBufferInWindow(HDC DeviceContext,
                   Buffer.Memory,
                   &Buffer.Info,
                   DIB_RGB_COLORS, SRCCOPY);
+#else
+    
+    glViewport(0, 0, WindowWidth, WindowHeight);
+
+    glBindTexture(GL_TEXTURE_2D, GlobalBlitTextureHandle);
+    glTexImage2D(GL_TEXTURE_2D, 0, 
+                 GL_RGBA8, 
+                 Buffer.Width, 
+                 Buffer.Height, 0, 
+                 GL_BGRA_EXT, 
+                 GL_UNSIGNED_BYTE, 
+                 Buffer.Memory);
+    
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+    
+    glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+    
+    glEnable(GL_TEXTURE_2D);
+    
+    glClearColor(1.0f, 0.0f, 1.0f, 0.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glMatrixMode(GL_TEXTURE);
+    glLoadIdentity();
+    
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    
+    glMatrixMode(GL_PROJECTION);
+    real32 a = 2.0f / (real32)Buffer.Width;
+    real32 b = 2.0f / (real32)Buffer.Height;
+    
+    real32 Proj[] = 
+    {
+        a,  0,  0,  0,
+        0,  b,  0,  0,
+        0,  0,  0,  0,
+        -1, -1,  0,  1,
+    };
+    
+    glLoadMatrixf(Proj);
+    
+    glBegin(GL_TRIANGLES);
+    
+    real32 P = 0.9f;
+    
+    //lower
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(0, 0);
+    
+    glTexCoord2f(1.0f, 0.0f);
+    glVertex2f((real32)Buffer.Width, 0);
+    
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f((real32)Buffer.Width, (real32)Buffer.Height);
+    
+    //upper
+    glTexCoord2f(0.0f, 0.0f);
+    glVertex2f(0, 0);
+    
+    glTexCoord2f(1.0f, 1.0f);
+    glVertex2f((real32)Buffer.Width, (real32)Buffer.Height);
+    
+    glTexCoord2f(0.0f, 1.0f);
+    glVertex2f(0, (real32)Buffer.Height);
+    
+    glEnd();
+    
+    SwapBuffers(DeviceContext);
+    
+#endif
+}
+
+internal void Win32InitOpenGL(HWND Window)
+{
+    HDC WindowDC = GetDC(Window);
+    
+    PIXELFORMATDESCRIPTOR DesiredPixelFormat = {0};
+    DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
+    DesiredPixelFormat.nVersion = 1;
+    DesiredPixelFormat.dwFlags = 
+        PFD_SUPPORT_OPENGL|PFD_DRAW_TO_WINDOW|PFD_DOUBLEBUFFER;
+    DesiredPixelFormat.cColorBits = 32;
+    DesiredPixelFormat.cAlphaBits = 8;
+    DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
+    
+    int SuggestedPixelFormatIndex = ChoosePixelFormat(WindowDC, &DesiredPixelFormat);
+    PIXELFORMATDESCRIPTOR SuggestedPixelFormat = {0};
+    DescribePixelFormat(WindowDC, SuggestedPixelFormatIndex, 
+                        sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
+    SetPixelFormat(WindowDC, SuggestedPixelFormatIndex, &SuggestedPixelFormat);
+    
+    HGLRC OpenGLRC = wglCreateContext(WindowDC);
+    if(wglMakeCurrent(WindowDC, OpenGLRC))
+    {
+        glGenTextures(1, &GlobalBlitTextureHandle);
+    }
+    else
+    {
+        Assert("can't go here");
+    }
+    
+    ReleaseDC(Window, WindowDC);
 }
 
 LRESULT CALLBACK
@@ -445,6 +555,7 @@ WinMain(HINSTANCE Instance,
             0);
         if(Window)
         {
+            Win32InitOpenGL(Window);
             GlobalRunning = true;
             
             // NOTE(casey): Since we specified CS_OWNDC, we can just

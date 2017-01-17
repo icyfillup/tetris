@@ -29,8 +29,8 @@ internal void SetBlockPixel(block *Block, int32 X, int32 Y)
         {
             Block->Pixel[0] = {X, Y};
             Block->Pixel[1] = {X, Y - 1};
-            Block->Pixel[2] = {X, Y + 1};
-            Block->Pixel[3] = {X, Y + 2};
+            Block->Pixel[2] = {X, Y - 2};
+            Block->Pixel[3] = {X, Y + 1};
         }break;
         
         case T:

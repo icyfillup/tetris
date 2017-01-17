@@ -1,3 +1,5 @@
+
+
 #include "tetris.h"
 #include "tetris_random.h"
 #include "tetris_playing.cpp"
@@ -43,41 +45,46 @@ internal screen_area* CreateScreenArea(memory_arena* TetrisArena,
     return Result;
 }
 
-//TODO: Current using screen position as array index; a i - 1 problem. fix
+global_variable int32 WorldHeight = 20;
+global_variable int32 WorldWidth = 20;
+global_variable int32 WorldPitch = 20;
 
+//TODO: Current using screen position as array index; a i - 1 problem. fix it
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
     Assert(sizeof(game_state) <= Memory->PermanentStorageSize);
-    
-    #if 0
     game_state *GameState = (game_state *) Memory->PermanentStorage;
+    local_persist v2 StartingPoint = {};
     
     //TODO: Should i introduce a new file for tetris block or
     //      make a tetris map file with the tetris block info
 
-    local_persist v2 StartingPoint = {};
-
-    
     if(!Memory->IsInit)
     {
         InitArena(&GameState->TetrisArena,
                   (uint8 *)Memory->PermanentStorage + sizeof(game_state),
                   Memory->PermanentStorageSize - sizeof(game_state));
-
+        
         GameState->TetrisWorld = PushStruct(&GameState->TetrisArena, tetris_world);
         
+        // TODO: hard coded value for playing_screen size. make generalization with Buffer->BytesPerPixel
         {//Playing Screen
+            local_persist int32 PlayingScreenPosX = 0;
+            local_persist int32 PlayingScreenPosY = 0;
+            local_persist int32 PlayingScreenWidth = 10;
+            local_persist int32 PlayingScreenHeight = 20;
+            
             GameState->TetrisWorld->PlayingScreen =
                 PushStruct(&GameState->TetrisArena, playing_screen);
-
+            
             GameState->TetrisWorld->PlayingScreen->ScreenArea =
-                CreateScreenArea(&GameState->TetrisArena,
-                                 0, 0, 10, 20);
-                
-            GameState->TetrisWorld->PlayingScreen->Pitch = Buffer->Width;
+                CreateScreenArea(&GameState->TetrisArena, PlayingScreenPosX, PlayingScreenPosY, 
+                                 PlayingScreenWidth, PlayingScreenHeight);
+            
+            GameState->TetrisWorld->PlayingScreen->Pitch = WorldPitch;
             GameState->TetrisWorld->PlayingScreen->TimePassed = 0;
         }
-
+        
         {//Player
             GameState->Player.Block = PushStruct(&GameState->TetrisArena, block);
             
@@ -95,19 +102,24 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         }
         
         {//Next Block Screen
-            GameState->TetrisWorld->NextBlockScreen =
+            local_persist int32 NextBlockWorldPosX = 13;
+            local_persist int32 NextBlockWorldPosY = 10;
+            local_persist int32 NextBlockWorldWidth = 4;
+            local_persist int32 NextBlockWorldHeight = 4;
+            
+            GameState->TetrisWorld->NextBlockScreen =  
                 PushStruct(&GameState->TetrisArena, next_block_screen);
             GameState->TetrisWorld->NextBlockScreen->NextBlock =
                 PushStruct(&GameState->TetrisArena, block);
-            GameState->TetrisWorld->NextBlockScreen->ScreenArea =
-                CreateScreenArea(&GameState->TetrisArena,
-                                 13, 10, 4, 4);
+            GameState->TetrisWorld->NextBlockScreen->ScreenArea = 
+                CreateScreenArea(&GameState->TetrisArena,NextBlockWorldPosX, NextBlockWorldPosY, 
+                                 NextBlockWorldWidth, NextBlockWorldHeight);
             
-            GameState->TetrisWorld->NextBlockScreen->Pitch = Buffer->Width;
+            GameState->TetrisWorld->NextBlockScreen->Pitch = WorldPitch;
             GameState->TetrisWorld->NextBlockScreen->ScreenPos.X =
-                ((GameState->TetrisWorld->NextBlockScreen->ScreenArea->Width / 2) - 1);
+                ((GameState->TetrisWorld->NextBlockScreen->ScreenArea->Width / 2));
             GameState->TetrisWorld->NextBlockScreen->ScreenPos.Y =
-                ((GameState->TetrisWorld->NextBlockScreen->ScreenArea->Height / 2) - 1);
+                ((GameState->TetrisWorld->NextBlockScreen->ScreenArea->Height / 2));
             
             GetNextBlock(GameState->TetrisWorld->NextBlockScreen->NextBlock,
                          RandomNumberTable[RandomNumberIndex]);
@@ -118,14 +130,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         }
         
         {//Score Screen
+            local_persist int32 ScoreScreenWorldPosX = 11;
+            local_persist int32 ScoreScreenWorldPosY = 15;
+            local_persist int32 ScoreScreenWorldWidth = 8;
+            local_persist int32 ScoreScreenWorldHeight = 2;
+            
             GameState->TetrisWorld->ScoreScreen =
                 PushStruct(&GameState->TetrisArena, score_screen);
             GameState->TetrisWorld->ScoreScreen->ScreenArea =
-                CreateScreenArea(&GameState->TetrisArena,
-                                 11, 15, 8, 2);
+                CreateScreenArea(&GameState->TetrisArena, ScoreScreenWorldPosX, 
+                                 ScoreScreenWorldPosY, ScoreScreenWorldWidth, ScoreScreenWorldHeight);
             GameState->TetrisWorld->ScoreScreen->ScreenPos.X = 0;            
             GameState->TetrisWorld->ScoreScreen->ScreenPos.Y = 0;
-            GameState->TetrisWorld->ScoreScreen->Pitch = Buffer->Width;
+            GameState->TetrisWorld->ScoreScreen->Pitch = WorldWidth;
             GameState->TetrisWorld->ScoreScreen->Score = 0;
         }
                 
@@ -373,7 +390,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         {
             WriteIntoScreenArea(NextBlockScreen->ScreenArea,
                                 NextBlockScreen->NextBlock->Pixel[i].X,
-                                NextBlockScreen->NextBlock->Pixel[i].Y, ' ');
+                                NextBlockScreen->NextBlock->Pixel[i].Y, '\0');
         
         }
         
@@ -385,7 +402,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
         GetNextBlock(NextBlockScreen->NextBlock, RandomNumberTable[RandomNumberIndex]);
         SetBlockPixel(NextBlockScreen->NextBlock, 
-                      NextBlockScreen->ScreenPos.X, NextBlockScreen->ScreenPos.Y);
+                      NextBlockScreen->ScreenPos.X, 
+                      NextBlockScreen->ScreenPos.Y);
 
         {// restart new block for player
             SetBlockPixel(Player->Block, StartingPoint.X, StartingPoint.Y);
@@ -403,101 +421,273 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
         
     }
 
-
 //NOTE: Write to the screen Buffer
-    for(uint32 Y_Index = 0; Y_Index < PlayingScreen->ScreenArea->Height; Y_Index++)
+    if(Buffer->BytesPerPixel == 4)
     {
-        for(uint32 X_Index = 0; X_Index < PlayingScreen->ScreenArea->Width; X_Index++)
-        {            
-            if(IsThisPositionFilled(PlayingScreen->ScreenArea, X_Index, Y_Index))
-            {
-                *(((uint8 *)Buffer->ScreenBit) +
-                  ((Y_Index + PlayingScreen->ScreenArea->WorldPos.Y) * PlayingScreen->Pitch) +
-                  (X_Index+ PlayingScreen->ScreenArea->WorldPos.X))
-                    =
-                    *(PlayingScreen->ScreenArea->Pixel +
-                      GetPositionOnScreenArea(PlayingScreen->ScreenArea,
-                                              X_Index, Y_Index));
-            }
-            else
-            {
-                *(((uint8 *)Buffer->ScreenBit) +
-                  (Y_Index * PlayingScreen->Pitch) +
-                  X_Index) = ' ';
-            }
-        }
-    }
-
-    for(uint32 Y_Index = 0; Y_Index < NextBlockScreen->ScreenArea->Height; Y_Index++)
-    {
-        for(uint32 X_Index = 0; X_Index < NextBlockScreen->ScreenArea->Width; X_Index++)
-        {                
-            if(IsThisPositionFilled(NextBlockScreen->ScreenArea,
-                                    X_Index, Y_Index))
-            {
-                *(((uint8 *)Buffer->ScreenBit) +
-                  ((NextBlockScreen->ScreenArea->WorldPos.Y + Y_Index) * NextBlockScreen->Pitch) +
-                  (X_Index + NextBlockScreen->ScreenArea->WorldPos.X))
-                    =
-                    *(NextBlockScreen->ScreenArea->Pixel +
-                      GetPositionOnScreenArea(NextBlockScreen->ScreenArea,
-                                              X_Index, Y_Index));
-            }
-            else
-            {
-                *(((uint8 *)Buffer->ScreenBit) +
-                  ((Y_Index + NextBlockScreen->ScreenArea->WorldPos.Y) * PlayingScreen->Pitch) +
-                  (X_Index + NextBlockScreen->ScreenArea->WorldPos.X)) = ' ';
-
-            }                
-        }
-    }
-
-    for(uint32 Y_Index = 0; Y_Index < ScoreScreen->ScreenArea->Height; Y_Index++)
-    {
-        for(uint32 X_Index = 0; X_Index < ScoreScreen->ScreenArea->Width; X_Index++)
+        local_persist int32 BlockSize = 35;
+        
+        for(int32 Y_Index = 0; Y_Index < WorldHeight; Y_Index++)
         {
-            if(IsThisPositionFilled(ScoreScreen->ScreenArea, X_Index, Y_Index))
+            for(int32 X_Index = 0; X_Index < WorldWidth; X_Index++)
             {
-                *(((uint8 *)Buffer->ScreenBit) +
-                  ((ScoreScreen->ScreenArea->WorldPos.Y + Y_Index) *
-                   ScoreScreen->Pitch) +
-                  (ScoreScreen->ScreenArea->WorldPos.X + X_Index))
-                    =
-                    *(ScoreScreen->ScreenArea->Pixel +
-                      GetPositionOnScreenArea(ScoreScreen->ScreenArea,
-                                              X_Index, Y_Index));
+                uint32 XOffset = (BlockSize * X_Index);
+                uint32 YOffset = (BlockSize * Y_Index);
+                
+                uint8 *Row = (uint8 *)Buffer->ScreenBit;
+                uint32 *Pixel = (uint32 *)Row;
+                
+                local_persist uint8 Blue = 255;
+                local_persist uint8 Green = 255;
+                local_persist uint8 Red = 255;
+                
+                for(int32 y = 0; y < BlockSize; y++)
+                {
+                    Pixel = ((uint32 *)Row + XOffset) + (Buffer->Width * YOffset);
+                    for(int32 x = 0; x < BlockSize; x++)
+                    {
+                        *Pixel++ = ((Red << 16) | (Green << 8) | (Blue));
+                    }
+                    Row += Buffer->Pitch;
+                }
             }
-            else
+        }
+        
+        
+        for(uint32 Y_Index = 0; Y_Index < PlayingScreen->ScreenArea->Height; Y_Index++)
+        {
+            for(uint32 X_Index = 0; X_Index < PlayingScreen->ScreenArea->Width; X_Index++)
             {
-                *(((uint8 *)Buffer->ScreenBit) +((ScoreScreen->ScreenPos.Y + ScoreScreen->ScreenArea->WorldPos.Y + Y_Index)* ScoreScreen->Pitch) +(ScoreScreen->ScreenPos.X  + ScoreScreen->ScreenArea->WorldPos.X + X_Index)) = ' ';
+                uint32 XOffset = (BlockSize * X_Index);
+                uint32 YOffset = (BlockSize * Y_Index);
+                
+                uint8 *Row = (uint8 *)Buffer->ScreenBit;
+                uint32 *Pixel = (uint32 *)Row;
+                
+                local_persist uint8 Blue;
+                local_persist uint8 Green;
+                local_persist uint8 Red;
+                
+                if(IsThisPositionFilled(PlayingScreen->ScreenArea, X_Index, Y_Index))
+                {
+                     Blue = 255;
+                     Green = 0;
+                     Red = 0;
+                }
+                else
+                {
+                     Blue = 0;
+                     Green = 0;
+                    Red = 255;
+                    }
+                    
+                for(int32 y = 0; y < BlockSize; y++)
+                {
+                    Pixel = ((uint32 *)Row + XOffset) + (Buffer->Width * YOffset);
+                    for(int32 x = 0; x < BlockSize; x++)
+                    {
+                        *Pixel++ = ((Red << 16) | (Green << 8) | (Blue));
+                    }
+                    Row += Buffer->Pitch;
+                }
             }
+        }
+        
+        // render NextBlockScreen
+        for(uint32 Y_Index = 0; Y_Index < NextBlockScreen->ScreenArea->Height; Y_Index++)
+        {
+            for(uint32 X_Index = 0; X_Index < NextBlockScreen->ScreenArea->Width; X_Index++)
+            {
+                uint32 XOffset = (BlockSize * NextBlockScreen->ScreenArea->WorldPos.X) + (BlockSize * X_Index);
+                uint32 YOffset = (BlockSize * NextBlockScreen->ScreenArea->WorldPos.Y) + (BlockSize * Y_Index);
+                
+                uint8 *Row = (uint8 *)Buffer->ScreenBit;
+                uint32 *Pixel = (uint32 *)Row;
+                
+                local_persist uint8 Blue;
+                local_persist uint8 Green;
+                local_persist uint8 Red;
+                
+                if(IsThisPositionFilled(NextBlockScreen->ScreenArea, X_Index, Y_Index))
+                {
+                     Blue = 0;
+                    Green = 255;
+                    Red = 0;
+                }
+                else
+                {
+                     Blue = 255;
+                     Green = 0;
+                     Red = 255;
+                }   
+                
+                for(int32 y = 0; y < BlockSize; y++)
+                {
+                    Pixel = ((uint32 *)Row + XOffset) + (Buffer->Width * YOffset);
+                    for(int32 x = 0; x < BlockSize; x++)
+                    {
+                        *Pixel++ = ((Red << 16) | (Green << 8) | (Blue));
+                    }
+                    Row += Buffer->Pitch;
+                }
+            }
+        }
+        
+        // render score screen
+        for(uint32 Y_Index = 0; Y_Index < ScoreScreen->ScreenArea->Height; Y_Index++)
+        {
+            for(uint32 X_Index = 0; X_Index < ScoreScreen->ScreenArea->Width; X_Index++)
+            {
+                uint32 XOffset = (BlockSize * ScoreScreen->ScreenArea->WorldPos.X) + (BlockSize * X_Index);
+                uint32 YOffset = (BlockSize * ScoreScreen->ScreenArea->WorldPos.Y) + (BlockSize * Y_Index);
+                
+                uint8 *Row = (uint8 *)Buffer->ScreenBit;
+                uint32 *Pixel = (uint32 *)Row;
+                
+                local_persist uint8 Blue;
+                local_persist uint8 Green;
+                local_persist uint8 Red;
+                
+                if(IsThisPositionFilled(ScoreScreen->ScreenArea, X_Index, Y_Index))
+                {
+                    Blue = 255;
+                    Green = 255;
+                    Red = 0;
+                }
+                else
+                {
+                    Blue = 64;
+                    Green = 128;
+                    Red = 128;
+                }
+                
+                for(int32 y = 0; y < BlockSize; y++)
+                {
+                    Pixel = ((uint32 *)Row + XOffset) + (Buffer->Width * YOffset);
+                    for(int32 x = 0; x < BlockSize; x++)
+                    {
+                        *Pixel++ = ((Red << 16) | (Green << 8) | (Blue));
+                    }
+                    Row += Buffer->Pitch;
+                }
+            }
+        }
+        
+        // render player block
+        for(int32 i = 0; i < ArrayCount(Player->Block->Pixel); i++)
+        {
+            local_persist uint8 Blue = 0;
+            local_persist uint8 Green = 255;
+            local_persist uint8 Red = 0;
             
+            uint8 *Row = (uint8 *)Buffer->ScreenBit;
+            uint32 *Pixel = (uint32 *)Row;
+            
+            uint32 XOffset = (BlockSize * Player->Block->Pixel[i].X);
+            uint32 YOffset = (BlockSize * Player->Block->Pixel[i].Y);
+            
+            for(int32 y = 0; y < BlockSize; y++)
+            {
+                Pixel = ((uint32 *)Row + XOffset) + (Buffer->Width * YOffset);
+                for(int32 x = 0; x < BlockSize; x++)
+                {
+                    *Pixel++ = ((Red << 16) | (Green << 8) | (Blue));
+                }
+                Row += Buffer->Pitch;
+            }
+        }
+        
+    }
+    else if(Buffer->BytesPerPixel == 1)
+    {
+        for(uint32 Y_Index = 0; Y_Index < PlayingScreen->ScreenArea->Height; Y_Index++)
+        {
+            for(uint32 X_Index = 0; X_Index < PlayingScreen->ScreenArea->Width; X_Index++)
+            {            
+                if(IsThisPositionFilled(PlayingScreen->ScreenArea, X_Index, Y_Index))
+                {
+                    *(((uint8 *)Buffer->ScreenBit) +
+                      ((Y_Index + PlayingScreen->ScreenArea->WorldPos.Y) * PlayingScreen->Pitch) +
+                      (X_Index+ PlayingScreen->ScreenArea->WorldPos.X))
+                        =
+                        *(PlayingScreen->ScreenArea->Pixel +
+                          GetPositionOnScreenArea(PlayingScreen->ScreenArea,
+                                                  X_Index, Y_Index));
+                }
+                else
+                {
+                    *(((uint8 *)Buffer->ScreenBit) +
+                      (Y_Index * PlayingScreen->Pitch) +
+                      X_Index) = ' ';
+                }
+            }
+        }
+        
+        for(uint32 Y_Index = 0; Y_Index < NextBlockScreen->ScreenArea->Height; Y_Index++)
+        {
+            for(uint32 X_Index = 0; X_Index < NextBlockScreen->ScreenArea->Width; X_Index++)
+            {                
+                if(IsThisPositionFilled(NextBlockScreen->ScreenArea,
+                                        X_Index, Y_Index))
+                {
+                    *(((uint8 *)Buffer->ScreenBit) +
+                      ((NextBlockScreen->ScreenArea->WorldPos.Y + Y_Index) * NextBlockScreen->Pitch) +
+                      (X_Index + NextBlockScreen->ScreenArea->WorldPos.X))
+                        =
+                        *(NextBlockScreen->ScreenArea->Pixel +
+                          GetPositionOnScreenArea(NextBlockScreen->ScreenArea,
+                                                  X_Index, Y_Index));
+                }
+                else
+                {
+                    *(((uint8 *)Buffer->ScreenBit) +
+                      ((Y_Index + NextBlockScreen->ScreenArea->WorldPos.Y) * PlayingScreen->Pitch) +
+                      (X_Index + NextBlockScreen->ScreenArea->WorldPos.X)) = ' ';
+                    
+                }                
+            }
+        }
+        
+        for(uint32 Y_Index = 0; Y_Index < ScoreScreen->ScreenArea->Height; Y_Index++)
+        {
+            for(uint32 X_Index = 0; X_Index < ScoreScreen->ScreenArea->Width; X_Index++)
+            {
+                if(IsThisPositionFilled(ScoreScreen->ScreenArea, X_Index, Y_Index))
+                {
+                    *(((uint8 *)Buffer->ScreenBit) +
+                      ((ScoreScreen->ScreenArea->WorldPos.Y + Y_Index) *
+                       ScoreScreen->Pitch) +
+                      (ScoreScreen->ScreenArea->WorldPos.X + X_Index))
+                        =
+                        *(ScoreScreen->ScreenArea->Pixel +
+                          GetPositionOnScreenArea(ScoreScreen->ScreenArea,
+                                                  X_Index, Y_Index));
+                }
+                else
+                {
+                    *(((uint8 *)Buffer->ScreenBit) +((ScoreScreen->ScreenPos.Y + ScoreScreen->ScreenArea->WorldPos.Y + Y_Index)* ScoreScreen->Pitch) +(ScoreScreen->ScreenPos.X  + ScoreScreen->ScreenArea->WorldPos.X + X_Index)) = ' ';
+                }
+                
+            }
+        }
+        
+        for(int32 i = 0; i < ArrayCount(Player->Block->Pixel); i++)
+        {
+            *(((uint8 *)Buffer->ScreenBit) +
+              ((Player->Block->Pixel[i].Y) *
+               PlayingScreen->Pitch
+               ) +
+              (Player->Block->Pixel[i].X)) = '#';
         }
     }
-
-    for(int32 i = 0; i < ArrayCount(Player->Block->Pixel); i++)
+    else
     {
-        *(((uint8 *)Buffer->ScreenBit) +
-          ((Player->Block->Pixel[i].Y) *
-           PlayingScreen->Pitch
-           ) +
-          (Player->Block->Pixel[i].X)) = '#';
+        Assert("Support BytesPerPixel for 4 or 1");
     }
+    
 
     Memory->DEBUGOutputMessage("Player X: ", (real32)Player->Position->X);
     Memory->DEBUGOutputMessage("Player Y: ", (real32)Player->Position->Y);
 
     Memory->DEBUGOutputMessage("BlockCenter X: ", (real32)Player->Block->Pixel[0].X);
     Memory->DEBUGOutputMessage("BlockCenter Y: ", (real32)Player->Block->Pixel[0].Y);
-
-    #else
-    
-     //local_persist int XOffset = 0;
-    //local_persist int YOffset = 0;
-    
-    RenderWeirdGradient(Buffer, 0, 0);
-    
-    
-    #endif
 }

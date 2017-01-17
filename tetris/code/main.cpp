@@ -33,8 +33,9 @@ DEBUG_PLATFORM_READ_FROM_FILE(DEBUGPlatformReadFromFile)
 {
     debug_read_file_result Result = {};
 
-    HANDLE FileHandle =  CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ,
-                                    0, OPEN_EXISTING, 0, 0);
+    HANDLE FileHandle =  CreateFileA(FileName, GENERIC_READ, 
+                                     FILE_SHARE_READ, 0, 
+                                     OPEN_EXISTING, 0, 0);
     if(FileHandle)
     {
         LARGE_INTEGER FileSize;
@@ -333,7 +334,6 @@ internal void CMDRecordInput(CMD_state* State, game_controller* NewInput)
     WriteFile(State->RecordingHandle, NewInput,
               sizeof(*NewInput), &BytesWritten, 0);    
 }
-
 
 internal void CMDBeginInputPlayBack(CMD_state* State,
                                     int InputPlayingIndex)
